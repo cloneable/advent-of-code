@@ -19,13 +19,29 @@ enum Hand {
     Scissors = 3,
 }
 
+impl Hand {
+    fn play_for(self, o: Outcome) -> Hand {
+        use Hand::*;
+        use Outcome::*;
+        match (self, o) {
+            (Rock, Loss) => Scissors,
+            (Rock, Win) => Paper,
+            (Paper, Loss) => Rock,
+            (Paper, Win) => Scissors,
+            (Scissors, Loss) => Paper,
+            (Scissors, Win) => Rock,
+            (h, Draw) => h,
+        }
+    }
+}
+
 impl FromStr for Hand {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "A" | "X" => Ok(Hand::Rock),
-            "B" | "Y" => Ok(Hand::Paper),
-            "C" | "Z" => Ok(Hand::Scissors),
+            "A" => Ok(Hand::Rock),
+            "B" => Ok(Hand::Paper),
+            "C" => Ok(Hand::Scissors),
             _ => Err(anyhow::Error::msg(format!("unknown character: {}", s))),
         }
     }
@@ -36,6 +52,18 @@ enum Outcome {
     Loss = 0,
     Draw = 3,
     Win = 6,
+}
+
+impl FromStr for Outcome {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "X" => Ok(Outcome::Loss),
+            "Y" => Ok(Outcome::Draw),
+            "Z" => Ok(Outcome::Win),
+            _ => Err(anyhow::Error::msg(format!("unknown character: {}", s))),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -72,7 +100,8 @@ struct StrategyGuide {
 impl aoc::LineParser for StrategyGuide {
     fn parse_line(&mut self, line: &str) {
         let opponent: Hand = line[0..1].parse().unwrap();
-        let player: Hand = line[2..3].parse().unwrap();
+        let outcome: Outcome = line[2..3].parse().unwrap();
+        let player = opponent.play_for(outcome);
         let round = Round { player, opponent };
 
         let score = round.player_score();
