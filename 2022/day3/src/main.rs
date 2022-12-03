@@ -3,7 +3,8 @@ use std::{collections::HashSet, str::FromStr};
 fn main() {
     let mut guide = RucksackReader::default();
     aoc::read_from_stdin(&mut guide);
-    println!("{}", guide.items_sum);
+    let sum: usize = guide.items.into_iter().map(|i| i.0 as usize).sum();
+    println!("{}", sum);
 }
 
 #[derive(Default, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -28,29 +29,27 @@ impl FromStr for Item {
 
 #[derive(Default, Debug)]
 struct RucksackReader {
-    items_sum: usize,
+    member_index: usize,
+    group_items: HashSet<Item>,
+    items: Vec<Item>,
 }
 
 impl aoc::LineParser for RucksackReader {
     fn parse_line(&mut self, line: &str) {
-        let (first, second) = line.split_at(line.len() / 2);
-
-        let mut first_set = HashSet::new();
-        for i in 0..first.len() {
-            let item: Item = first[i..i + 1].parse().unwrap();
-            first_set.insert(item);
-        }
-
-        let mut set = HashSet::new();
-        for i in 0..second.len() {
-            let item: Item = second[i..i + 1].parse().unwrap();
-            if first_set.contains(&item) {
-                set.insert(item);
+        let mut group_items = HashSet::new();
+        for i in 0..line.len() {
+            let item: Item = line[i..i + 1].parse().unwrap();
+            if self.group_items.len() == 0 || self.group_items.contains(&item) {
+                group_items.insert(item);
             }
         }
+        self.group_items = group_items;
+        self.member_index = (self.member_index + 1) % 3;
 
-        for item in set.into_iter() {
-            self.items_sum += item.0 as usize;
+        if self.member_index == 0 {
+            debug_assert_eq!(1, self.group_items.len());
+            self.items.push(*self.group_items.iter().next().unwrap());
+            self.group_items.clear();
         }
     }
 }
