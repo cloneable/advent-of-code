@@ -15,7 +15,7 @@ impl aoc::LineParser for Pairs {
     fn parse_line(&mut self, line: &str) {
         let (f, s) = line.split_once(',').unwrap();
         let (first, second): (Section, Section) = (f.parse().unwrap(), s.parse().unwrap());
-        if first.fully_overlaps(&second) || second.fully_overlaps(&first) {
+        if first.overlaps(&second) {
             self.overlapping += 1;
         }
     }
@@ -28,8 +28,8 @@ struct Section {
 }
 
 impl Section {
-    fn fully_overlaps(&self, other: &Section) -> bool {
-        self.start <= other.start && self.end >= other.end
+    fn overlaps(&self, other: &Section) -> bool {
+        !(self.end < other.start || self.start > other.end)
     }
 }
 
