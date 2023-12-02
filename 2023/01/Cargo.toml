@@ -1,0 +1,10 @@
+[package]
+name = "aoc2023day1"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+aoc = { path = "../../aoc" }
+anyhow = "1"
+regex = "1.10.2"
+once_cell = "1.18.0"

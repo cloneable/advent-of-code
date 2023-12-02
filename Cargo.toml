@@ -1,2 +1,3 @@
 [workspace]
-members = ["aoc", "2022/day1", "2022/day2", "2022/day3", "2022/day4"]
+members = ["aoc", "2022/day1", "2022/day2", "2022/day3", "2022/day4", "2023/01"]
+resolver = "2"
