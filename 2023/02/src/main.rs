@@ -8,17 +8,13 @@ use nom::{
 use std::num::ParseIntError;
 
 fn main() {
-    let mut games = Games {
-        rgb: [12, 13, 14],
-        sum: 0,
-    };
+    let mut games = Games { sum: 0 };
     aoc::read_from_stdin(&mut games);
     println!("{:?}", games.sum);
 }
 
 #[derive(Debug)]
 struct Games {
-    rgb: [usize; 3],
     sum: usize,
 }
 
@@ -119,12 +115,7 @@ impl aoc::LineParser for Games {
                 }
             }
         }
-        for color in 0..3 {
-            if self.rgb[color] < max_rgb[color] {
-                return;
-            }
-        }
 
-        self.sum += game.id;
+        self.sum += max_rgb.iter().product::<usize>();
     }
 }
