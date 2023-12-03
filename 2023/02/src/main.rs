@@ -1,11 +1,10 @@
+use aoc::pc::{parse_num, parse_sep, ws0, ws1};
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take_while_m_n},
-    combinator::map_res,
+    bytes::complete::tag,
     multi::{separated_list0, separated_list1},
     IResult,
 };
-use std::num::ParseIntError;
 
 fn main() {
     let mut games = Games { sum: 0 };
@@ -32,39 +31,20 @@ enum Color {
     Blue = 2,
 }
 
-impl<'a> TryFrom<&'a str> for Color {
-    type Error = ();
-
-    fn try_from(s: &'a str) -> Result<Self, ()> {
-        Ok(match s {
-            "red" => Color::Red,
-            "green" => Color::Green,
-            "blue" => Color::Blue,
-            _ => return Err(()),
-        })
-    }
+fn color_red(input: &str) -> IResult<&str, Color> {
+    tag("red")(input).map(|(rem, _)| (rem, Color::Red))
 }
 
-fn ws0(input: &str) -> IResult<&str, ()> {
-    take_while_m_n(0, 1, |c: char| c.is_ascii_whitespace())(input).map(|(tail, _)| (tail, ()))
+fn color_green(input: &str) -> IResult<&str, Color> {
+    tag("green")(input).map(|(rem, _)| (rem, Color::Green))
 }
 
-fn ws1(input: &str) -> IResult<&str, ()> {
-    take_while_m_n(1, 1, |c: char| c.is_ascii_whitespace())(input).map(|(tail, _)| (tail, ()))
-}
-
-fn parse_num(input: &str) -> IResult<&str, usize> {
-    fn p(input: &str) -> Result<usize, ParseIntError> {
-        usize::from_str_radix(input, 10)
-    }
-    map_res(take_while_m_n(1, 10, |c: char| c.is_ascii_digit()), p)(input)
+fn color_blue(input: &str) -> IResult<&str, Color> {
+    tag("blue")(input).map(|(rem, _)| (rem, Color::Blue))
 }
 
 fn parse_color(input: &str) -> IResult<&str, Color> {
-    map_res(
-        alt((tag("red"), tag("green"), tag("blue"))),
-        Color::try_from,
-    )(input)
+    alt((color_red, color_green, color_blue))(input)
 }
 
 fn parse_cube(input: &str) -> IResult<&str, (usize, Color)> {
@@ -76,18 +56,8 @@ fn parse_cube(input: &str) -> IResult<&str, (usize, Color)> {
     Ok((input, (id, color)))
 }
 
-fn parse_cubes_separator(input: &str) -> IResult<&str, ()> {
-    let (input, _) = ws0(input)?;
-    tag(",")(input).map(|(tail, _)| (tail, ()))
-}
-
 fn parse_set(input: &str) -> IResult<&str, Vec<(usize, Color)>> {
-    separated_list1(parse_cubes_separator, parse_cube)(input)
-}
-
-fn parse_set_separator(input: &str) -> IResult<&str, ()> {
-    let (input, _) = ws0(input)?;
-    tag(";")(input).map(|(tail, _)| (tail, ()))
+    separated_list1(parse_sep(","), parse_cube)(input)
 }
 
 fn parse_game(input: &str) -> IResult<&str, Game> {
@@ -96,7 +66,7 @@ fn parse_game(input: &str) -> IResult<&str, Game> {
     let (input, id) = parse_num(input)?;
     let (input, _) = tag(":")(input)?;
 
-    let (input, sets) = separated_list0(parse_set_separator, parse_set)(input)?;
+    let (input, sets) = separated_list0(parse_sep(";"), parse_set)(input)?;
 
     Ok((input, Game { id, sets }))
 }
