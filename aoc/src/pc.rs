@@ -7,11 +7,11 @@ use nom::{
 use std::num::ParseIntError;
 
 pub fn ws0(input: &str) -> IResult<&str, ()> {
-    take_while_m_n(0, 1, |c: char| c.is_ascii_whitespace())(input).map(|(tail, _)| (tail, ()))
+    take_while_m_n(0, 10, |c: char| c.is_ascii_whitespace())(input).map(|(tail, _)| (tail, ()))
 }
 
 pub fn ws1(input: &str) -> IResult<&str, ()> {
-    take_while_m_n(1, 1, |c: char| c.is_ascii_whitespace())(input).map(|(tail, _)| (tail, ()))
+    take_while_m_n(1, 10, |c: char| c.is_ascii_whitespace())(input).map(|(tail, _)| (tail, ()))
 }
 
 pub fn parse_num(input: &str) -> IResult<&str, usize> {
