@@ -1,40 +1,42 @@
 use aoc::pc::{parse_num, ws0, ws1};
 use nom::{bytes::complete::tag, multi::separated_list1, IResult};
-use std::collections::HashSet;
+use std::{collections::HashSet, io};
 
 fn main() {
-    let mut problem = Problem { sum: 0 };
-    aoc::read_from_stdin(&mut problem);
-    println!("{:?}", problem.sum);
-}
+    let mut sum = 0;
+    let mut copy_counters = Vec::<usize>::default();
 
-#[derive(Debug)]
-struct Problem {
-    sum: usize,
-}
+    for (num, line) in io::stdin().lines().enumerate() {
+        let line = line.unwrap();
 
-impl aoc::LineParser for Problem {
-    fn parse_line(&mut self, line: &str) {
-        let (rem, card) = parse_card(line).unwrap();
+        let (_, original) = parse_card(&line).unwrap();
 
-        let mut points = 0;
-        for w in card.winning {
-            if card.selected.contains(&w) {
-                if points == 0 {
-                    points = 1;
-                } else {
-                    points *= 2;
-                }
+        let mut affected_cards = 0;
+        for w in original.winning {
+            if original.selected.contains(&w) {
+                affected_cards += 1;
             }
         }
 
-        self.sum += points;
+        let mut total_copies = 1;
+        if let Some(extra_copies) = copy_counters.get(num) {
+            total_copies += extra_copies;
+        }
+
+        copy_counters.resize(copy_counters.len().max(num + 1 + affected_cards), 0);
+        for copy_index in num..(num + affected_cards) {
+            copy_counters[copy_index + 1] += total_copies;
+        }
+
+        sum += total_copies;
     }
+
+    println!("{:?}", sum);
 }
 
 #[derive(Debug)]
 struct Card {
-    id: usize,
+    _id: usize,
     selected: HashSet<usize>,
     winning: Vec<usize>,
 }
@@ -55,7 +57,7 @@ fn parse_card(input: &str) -> IResult<&str, Card> {
     Ok((
         input,
         Card {
-            id,
+            _id: id,
             selected: selected.into_iter().collect(),
             winning,
         },
