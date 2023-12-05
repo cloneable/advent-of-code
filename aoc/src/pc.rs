@@ -18,7 +18,7 @@ pub fn parse_num(input: &str) -> IResult<&str, usize> {
     fn p(input: &str) -> Result<usize, ParseIntError> {
         usize::from_str_radix(input, 10)
     }
-    map_res(take_while_m_n(1, 10, |c: char| c.is_ascii_digit()), p)(input)
+    map_res(take_while_m_n(1, 20, |c: char| c.is_ascii_digit()), p)(input)
 }
 
 pub fn parse_sep<'a>(sep: &'static str) -> impl Parser<&'a str, (), Error<&'a str>> {

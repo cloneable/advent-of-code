@@ -3,14 +3,12 @@ use nom::{branch::alt, bytes::complete::tag, multi::separated_list1, IResult};
 use std::{collections::HashMap, io, ops::Range};
 
 fn main() {
-    let mut problem = Problem::default();
-
     let mut lines = io::stdin().lines().peekable();
     let line0 = lines.next().unwrap().unwrap();
     let (rem, seeds) = parse_seeds(&line0).unwrap();
     assert_eq!(0, rem.len());
-    problem.seeds = seeds.nums;
 
+    let mut mapped_ranges = HashMap::<Type, (Type, Vec<Mapping>)>::default();
     while let Some(empty) = lines.next() {
         assert_eq!(0, empty.as_ref().unwrap().len());
 
@@ -30,54 +28,111 @@ fn main() {
 
             mappings.push(mapping);
         }
-        problem.mappings.insert(title.from, (title.to, mappings));
+
+        mapped_ranges.insert(title.from, (title.to, mappings));
     }
 
-    // eprintln!("{problem:#?}");
+    let mut ranges = seeds;
+    let mut src_type = &Type::Seed;
+    while src_type != &Type::Location {
+        let (dest_type, dest_ranges) = &mapped_ranges[src_type];
 
-    problem.location = usize::MAX;
-    for seed in problem.seeds {
-        let mut src_type = Type::Seed;
-        let mut offset = seed;
-        loop {
-            let (dest_type, mappings) = &problem.mappings[&src_type];
-            offset = mappings
-                .iter()
-                .find_map(|m| m.translate(offset))
-                .unwrap_or(offset);
+        let mut new_ranges = Vec::new();
+        let mut stack = ranges.iter().rev().map(|r| r.clone()).collect::<Vec<_>>();
 
-            if *dest_type == Type::Location {
-                if problem.location > offset {
-                    problem.location = offset;
+        while let Some(seed_range) = stack.pop() {
+            let mut mapped = false;
+            for mapped_range in dest_ranges {
+                let (prefix, infix, suffix) =
+                    map_range(&seed_range, &mapped_range.src, mapped_range.dest);
+
+                if let Some(prefix) = prefix {
+                    stack.push(prefix);
+                    mapped = true;
                 }
-                break;
+                if let Some(infix) = infix {
+                    new_ranges.push(infix);
+                    mapped = true;
+                }
+                if let Some(suffix) = suffix {
+                    stack.push(suffix);
+                    mapped = true;
+                }
             }
-            src_type = *dest_type;
+            if !mapped {
+                new_ranges.push(seed_range);
+            }
         }
+
+        new_ranges.extend(stack.into_iter());
+
+        ranges = new_ranges;
+        src_type = dest_type;
     }
 
-    println!("{}", problem.location);
+    ranges.sort_by_key(|r| r.start);
+    let location = ranges.first().unwrap().start;
+
+    println!("{location}");
 }
 
-#[derive(Default, Debug)]
-struct Problem {
-    seeds: Vec<usize>,
-    mappings: HashMap<Type, (Type, Vec<Mapping>)>,
+fn map_range(
+    a: &Range<usize>,
+    m: &Range<usize>,
+    d: usize,
+) -> (
+    Option<Range<usize>>,
+    Option<Range<usize>>,
+    Option<Range<usize>>,
+) {
+    assert!(a.start < a.end);
+    assert!(m.start < m.end);
 
-    location: usize,
+    let prefix = if a.start < m.start && a.end > m.start {
+        Some(a.start..m.start)
+    } else {
+        None
+    };
+
+    let suffix = if a.end > m.end && a.start < m.end {
+        Some(m.end..a.end)
+    } else {
+        None
+    };
+
+    let overlap_start = a.start.max(m.start);
+    let overlap_end = a.end.min(m.end);
+    let infix = if overlap_start < overlap_end {
+        let start = overlap_start + d - m.start;
+        let end = overlap_end + d - m.start;
+        Some(start..end)
+    } else {
+        None
+    };
+
+    (prefix, infix, suffix)
 }
 
-#[derive(Debug)]
-struct Seeds {
-    nums: Vec<usize>,
+fn parse_range(input: &str) -> IResult<&str, Range<usize>> {
+    let (input, offset) = parse_num(input)?;
+    let (input, _) = ws1(input)?;
+    let (input, length) = parse_num(input)?;
+
+    Ok((
+        input,
+        Range {
+            start: offset,
+            end: offset + length,
+        },
+    ))
 }
 
-fn parse_seeds(input: &str) -> IResult<&str, Seeds> {
+fn parse_seeds(input: &str) -> IResult<&str, Vec<Range<usize>>> {
     let (input, _) = tag("seeds:")(input)?;
     let (input, _) = ws0(input)?;
-    let (input, nums) = separated_list1(ws1, parse_num)(input)?;
+    let (input, ranges) = separated_list1(ws1, parse_range)(input)?;
 
-    Ok((input, Seeds { nums }))
+    Ok((input, ranges))
 }
 
 #[derive(Debug)]
@@ -100,16 +155,6 @@ fn parse_title(input: &str) -> IResult<&str, Title> {
 struct Mapping {
     src: Range<usize>,
     dest: usize,
-}
-
-impl Mapping {
-    fn translate(&self, i: usize) -> Option<usize> {
-        if self.src.contains(&i) {
-            Some((i - self.src.start) + self.dest)
-        } else {
-            None
-        }
-    }
 }
 
 fn parse_mapping(input: &str) -> IResult<&str, Mapping> {
