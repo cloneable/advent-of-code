@@ -1,6 +1,6 @@
 pub mod pc;
 
-use std::{io, ops::Range};
+use std::{cmp::Ordering, io, ops::Range};
 
 pub trait LineParser {
   fn start(&mut self) {}
@@ -68,6 +68,25 @@ pub fn scan_num_at(src: &[u8], index: usize) -> Option<(usize, Range<usize>)> {
   } else {
     None
   }
+}
+
+pub fn binary_search<F>(range: Range<usize>, mut f: F) -> usize
+where
+  F: FnMut(usize) -> Ordering,
+{
+  let mut len = range.len();
+  let mut l = range.start;
+  let mut r = range.end;
+  while l < r {
+    let m = l + len / 2;
+    match f(m) {
+      Ordering::Less => l = m + 1,
+      Ordering::Greater => r = m,
+      Ordering::Equal => return m,
+    }
+    len = r - l;
+  }
+  l
 }
 
 #[cfg(test)]

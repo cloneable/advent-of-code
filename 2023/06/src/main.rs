@@ -1,4 +1,5 @@
-use std::{cmp::Ordering, ops::Range};
+use aoc::binary_search;
+use std::cmp::Ordering;
 
 fn main() {
   let mut lines = std::io::stdin().lines();
@@ -47,25 +48,6 @@ fn main() {
   let ways = end - start + 1;
 
   println!("{ways}");
-}
-
-fn binary_search<F>(time: Range<usize>, mut f: F) -> usize
-where
-  F: FnMut(usize) -> Ordering,
-{
-  let mut size = time.end;
-  let mut left = time.start;
-  let mut right = size;
-  while left < right {
-    let mid = left + size / 2;
-    match f(mid) {
-      Ordering::Less => left = mid + 1,
-      Ordering::Greater => right = mid,
-      Ordering::Equal => return mid,
-    }
-    size = right - left;
-  }
-  left
 }
 
 fn calc(press: usize, time: usize, distance: usize) -> bool {
