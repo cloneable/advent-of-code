@@ -1,36 +1,75 @@
+use std::{cmp::Ordering, ops::Range};
+
 fn main() {
   let mut lines = std::io::stdin().lines();
 
-  let times: usize = lines
+  let time = lines
     .next()
     .unwrap()
     .unwrap()
     .split_ascii_whitespace()
     .skip(1)
-    .map(|n| n.parse().unwrap())
-    .zip(
-      lines
-        .next()
-        .unwrap()
-        .unwrap()
-        .split_ascii_whitespace()
-        .skip(1)
-        .map(|n| n.parse().unwrap()),
-    )
-    .map(calc)
-    .product();
+    .collect::<String>()
+    .parse::<usize>()
+    .unwrap();
+  let distance = lines
+    .next()
+    .unwrap()
+    .unwrap()
+    .split_ascii_whitespace()
+    .skip(1)
+    .collect::<String>()
+    .parse::<usize>()
+    .unwrap();
 
-  println!("{times}");
+  let start = binary_search(1..time, |mid| {
+    let left = calc(mid - 1, time, distance);
+    let mid = calc(mid, time, distance);
+
+    match (left, mid) {
+      (false, true) => Ordering::Equal,
+      (false, false) => Ordering::Less,
+      (true, _) => Ordering::Greater,
+    }
+  });
+
+  let end = binary_search(1..time, |mid| {
+    let right = calc(mid + 1, time, distance);
+    let mid = calc(mid, time, distance);
+
+    match (mid, right) {
+      (true, false) => Ordering::Equal,
+      (false, false) => Ordering::Greater,
+      (_, true) => Ordering::Less,
+    }
+  });
+
+  let ways = end - start + 1;
+
+  println!("{ways}");
 }
 
-fn calc((time, distance): (usize, usize)) -> usize {
-  let mut count = 0;
-  for t0 in 1..time {
-    let t1 = time - t0;
-    let d = t0 * t1;
-    if d > distance {
-      count += 1
+fn binary_search<F>(time: Range<usize>, mut f: F) -> usize
+where
+  F: FnMut(usize) -> Ordering,
+{
+  let mut size = time.end;
+  let mut left = time.start;
+  let mut right = size;
+  while left < right {
+    let mid = left + size / 2;
+    match f(mid) {
+      Ordering::Less => left = mid + 1,
+      Ordering::Greater => right = mid,
+      Ordering::Equal => return mid,
     }
+    size = right - left;
   }
-  count
+  left
+}
+
+fn calc(press: usize, time: usize, distance: usize) -> bool {
+  let t1 = time - press;
+  let d = press * t1;
+  d > distance
 }
