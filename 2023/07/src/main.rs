@@ -40,8 +40,13 @@ fn calc_type(hand: &[u8]) -> usize {
   let mut max = 0;
 
   let mut counts = vec![0u8; 16];
+  let mut jokers = 0;
   for &card in hand {
     let card = card as usize;
+    if card == 1 {
+      jokers += 1;
+      continue;
+    }
     if counts[card] == 0 {
       types += 1;
     }
@@ -49,6 +54,13 @@ fn calc_type(hand: &[u8]) -> usize {
     if counts[card] > max {
       max = counts[card];
     }
+  }
+
+  if max == 0 {
+    max = jokers;
+    types = 1;
+  } else {
+    max += jokers;
   }
 
   match (max, types) {
@@ -72,7 +84,6 @@ fn card_value(card: u8) -> u8 {
     b'A' => 14,
     b'K' => 13,
     b'Q' => 12,
-    b'J' => 11,
     b'T' => 10,
 
     b'9' => 9,
@@ -83,6 +94,8 @@ fn card_value(card: u8) -> u8 {
     b'4' => 4,
     b'3' => 3,
     b'2' => 2,
+
+    b'J' => 1,
 
     _ => unreachable!("{card}"),
   }
