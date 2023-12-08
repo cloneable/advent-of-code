@@ -4,4 +4,6 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
+indexmap = "2"
 nom = "7"
+num = "0.4"
