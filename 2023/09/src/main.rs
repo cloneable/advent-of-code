@@ -10,13 +10,14 @@ fn main() {
       .collect::<Vec<_>>();
 
     let mut deltas = nums.clone();
-    let mut lasts = vec![nums.last().map(|v| *v).unwrap()];
+    let mut firsts = vec![nums.first().copied().unwrap()];
     while deltas.iter().any(|&n| n != 0) {
       deltas = deltas.windows(2).map(|x| x[1] - x[0]).collect::<Vec<_>>();
-      lasts.push(deltas.last().map(|v| *v).unwrap());
+      firsts.push(deltas.first().copied().unwrap());
     }
+    firsts.reverse();
 
-    sum += lasts.into_iter().reduce(|c, n| c + n).unwrap_or_default();
+    sum += firsts.into_iter().reduce(|a, b| b - a).unwrap();
   }
 
   println!("{sum}");
