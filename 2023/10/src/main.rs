@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 fn main() {
   let grid = Grid(
     std::io::stdin()
@@ -9,50 +7,26 @@ fn main() {
       .collect::<Vec<_>>(),
   );
 
-  let start_pos = grid.find_start();
-  eprintln!("{start_pos:?}");
-
-  let start_pipes = start_pos
-    .adjacent()
-    .filter_map(|pos| grid.pipe_at(pos).and_then(|pipe| Some((pos, pipe))))
-    .filter_map(|(pos, pipe)| pos.connects(pipe, start_pos))
-    .combinations(2)
-    .map(|v| Pipe::new(v[0].min(v[1]), v[0].max(v[1])))
-    .sorted_unstable()
-    .unique()
-    .collect::<Vec<Pipe>>();
-  eprintln!("{start_pipes:?}");
+  let (start_pos, start_pipe) = grid.find_start();
 
   let mut steps = 0;
-  'outer: for mut cur_pipe in start_pipes {
-    steps = 0;
+  let mut cur_pos = start_pos;
+  let mut cur_pipe = start_pipe;
+  loop {
+    steps += 1;
 
-    let mut cur_pos = start_pos;
-    loop {
-      steps += 1;
-
-      let Some(next_pos) = cur_pos.move_in(cur_pipe.to) else {
-        break;
-      };
-      let Some(next_pipe) = grid.pipe_at(next_pos) else {
-        break;
-      };
-      let Some(next_pipe) = next_pipe.align(cur_pipe.to.reverse()) else {
-        break;
-      };
-
-      cur_pos = next_pos;
-      cur_pipe = next_pipe;
-
-      if cur_pos == start_pos {
-        break 'outer;
-      }
+    let next_pos = cur_pos.move_in(cur_pipe.to).unwrap();
+    if next_pos == start_pos {
+      break;
     }
+    let next_pipe =
+      grid.pipe_at(next_pos).unwrap().align(cur_pipe.to.reverse()).unwrap();
+
+    cur_pos = next_pos;
+    cur_pipe = next_pipe;
   }
-  eprintln!("{steps:?}");
 
   let steps = (steps + 1) / 2;
-
   println!("{steps}");
 }
 
@@ -70,18 +44,33 @@ impl Grid {
     Bounds { rows: self.0.len(), cols: self.0[0].len() }
   }
 
-  fn find_start(&self) -> Pos {
+  fn find_start(&self) -> (Pos, Pipe) {
     let bounds = self.bounds();
-    let mut starts = Vec::<Pos>::new();
     for r in 0..bounds.rows {
       for c in 0..bounds.cols {
         if self.0[r][c] == Tile::Start {
-          starts.push((r, c, bounds).into());
+          let pos = (r, c, bounds).into();
+          let pipe = self.infer_pipe(pos);
+          return (pos, pipe);
         }
       }
     }
-    assert_eq!(1, starts.len());
-    starts[0]
+    unreachable!()
+  }
+
+  fn infer_pipe(&self, pos: Pos) -> Pipe {
+    let dirs = [Dir::N, Dir::S, Dir::E, Dir::W]
+      .into_iter()
+      .filter_map(|dir| pos.move_in(dir).and_then(|apos| Some((apos, dir))))
+      .filter_map(|(apos, dir)| {
+        self.pipe_at(apos).and_then(|pipe| Some((pipe, dir)))
+      })
+      .filter_map(|(pipe, dir)| pipe.align(dir.reverse()).and(Some(dir)))
+      .collect::<Vec<_>>();
+
+    assert_eq!(2, dirs.len());
+
+    Pipe::new(dirs[0], dirs[1])
   }
 }
 
@@ -105,10 +94,6 @@ impl From<(usize, usize, Bounds)> for Pos {
 }
 
 impl Pos {
-  fn adjacent(self) -> impl Iterator<Item = Pos> {
-    AdjacencyIter { pos: self, cur: 0 }
-  }
-
   fn move_in(self, dir: Dir) -> Option<Self> {
     match dir {
       Dir::N if self.row > 0 => {
@@ -140,62 +125,6 @@ impl Pos {
         });
       }
       _ => None,
-    }
-  }
-
-  fn connects(self, pipe: Pipe, target: Pos) -> Option<Dir> {
-    if self.move_in(pipe.from) == Some(target) {
-      Some(pipe.from.reverse())
-    } else if self.move_in(pipe.to) == Some(target) {
-      Some(pipe.to.reverse())
-    } else {
-      None
-    }
-  }
-}
-
-struct AdjacencyIter {
-  pos: Pos,
-  cur: usize,
-}
-
-impl Iterator for AdjacencyIter {
-  type Item = Pos;
-
-  fn next(&mut self) -> Option<Self::Item> {
-    loop {
-      self.cur += 1;
-      match self.cur {
-        1 => {
-          if self.pos.row > 0 {
-            return Some(
-              (self.pos.row - 1, self.pos.col, self.pos.bounds).into(),
-            );
-          }
-        }
-        2 => {
-          if self.pos.col > 0 {
-            return Some(
-              (self.pos.row - 1, self.pos.col, self.pos.bounds).into(),
-            );
-          }
-        }
-        3 => {
-          if self.pos.col + 1 < self.pos.bounds.cols {
-            return Some(
-              (self.pos.row, self.pos.col + 1, self.pos.bounds).into(),
-            );
-          }
-        }
-        4 => {
-          if self.pos.row + 1 < self.pos.bounds.rows {
-            return Some(
-              (self.pos.row + 1, self.pos.col, self.pos.bounds).into(),
-            );
-          }
-        }
-        _ => return None,
-      }
     }
   }
 }
@@ -250,6 +179,7 @@ struct Pipe {
 
 impl Pipe {
   fn new(from: Dir, to: Dir) -> Self {
+    assert_ne!(from, to);
     Pipe { from, to }
   }
 
