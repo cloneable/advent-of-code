@@ -1,63 +1,47 @@
-use itertools::Itertools;
-use std::collections::HashSet;
+const EXPANSION: usize = 1_000_000;
 
 fn main() {
-  let galaxies = std::io::stdin()
-    .lines()
-    .map(Result::unwrap)
-    .enumerate()
-    .map(|(r, line)| {
-      line
-        .bytes()
-        .enumerate()
-        .filter(|(_, b)| *b == b'#')
-        .map(|(c, _)| (r, c).into())
-        .collect::<Vec<Pos>>()
-    })
-    .flatten()
-    .collect::<Vec<_>>();
+  let mut galaxies = Vec::new();
+  let mut nonempty_cols = Vec::new();
 
-  let rows = galaxies.iter().map(|p| p.row).collect::<HashSet<_>>();
-  let cols = galaxies.iter().map(|p| p.col).collect::<HashSet<_>>();
+  let mut r = 0;
+  for line in std::io::stdin().lines().map(Result::unwrap) {
+    if r == 0 {
+      nonempty_cols.resize(line.len(), false);
+    }
+    let mut r_inc = EXPANSION;
+    for (c, b) in line.bytes().enumerate() {
+      if b == b'#' {
+        galaxies.push((r, c));
+        nonempty_cols[c] = true;
+        r_inc = 1;
+      }
+    }
+    r += r_inc;
+  }
 
   let mut sum = 0;
-  for (a, b) in galaxies.into_iter().tuple_combinations() {
-    sum += a.distance(b, &rows, &cols);
+  for a in 0..galaxies.len() - 1 {
+    for b in a + 1..galaxies.len() {
+      sum += distance(galaxies[a], galaxies[b], &nonempty_cols);
+    }
   }
 
   println!("{sum}");
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct Pos {
-  row: usize,
-  col: usize,
-}
+fn distance(
+  a: (usize, usize),
+  b: (usize, usize),
+  nonempty_cols: &[bool],
+) -> usize {
+  let r_range = a.0.min(b.0)..a.0.max(b.0);
+  let c_range = a.1.min(b.1)..a.1.max(b.1);
 
-impl From<(usize, usize)> for Pos {
-  fn from((row, col): (usize, usize)) -> Self {
-    Pos { row, col }
-  }
-}
+  let extra_cols = c_range.clone().filter(|&c| !nonempty_cols[c]).count();
 
-impl Pos {
-  fn distance(
-    self,
-    other: Pos,
-    rows: &HashSet<usize>,
-    cols: &HashSet<usize>,
-  ) -> usize {
-    let r_start = self.row.min(other.row);
-    let r_end = self.row.max(other.row);
-    let c_start = self.col.min(other.col);
-    let c_end = self.col.max(other.col);
+  let rows = r_range.len();
+  let cols = c_range.len() + extra_cols * (EXPANSION - 1);
 
-    let extra_rows = (r_start..r_end).filter(|r| !rows.contains(r)).count();
-    let extra_cols = (c_start..c_end).filter(|c| !cols.contains(c)).count();
-
-    let rows = (r_end - r_start - extra_rows) + extra_rows * 1000000;
-    let cols = (c_end - c_start - extra_cols) + extra_cols * 1000000;
-
-    rows + cols
-  }
+  rows + cols
 }
