@@ -55,8 +55,8 @@ impl Pos {
     let extra_rows = (r_start..r_end).filter(|r| !rows.contains(r)).count();
     let extra_cols = (c_start..c_end).filter(|c| !cols.contains(c)).count();
 
-    let rows = (r_end - r_start) + extra_rows;
-    let cols = (c_end - c_start) + extra_cols;
+    let rows = (r_end - r_start - extra_rows) + extra_rows * 1000000;
+    let cols = (c_end - c_start - extra_cols) + extra_cols * 1000000;
 
     rows + cols
   }
