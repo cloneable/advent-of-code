@@ -58,10 +58,8 @@ fn search(rows: &[u32], row_len: usize) -> usize {
 fn search_nums(nums: &[u32], width: usize) -> Option<usize> {
   for i in 0..nums.len() {
     if i != 0 {
-      if nums[i] == nums[i - 1] {
-        if check(nums, width, i - 1, i) {
-          return Some(i);
-        }
+      if check(nums, width, i - 1, i, false) == (true, true) {
+        return Some(i);
       }
     }
   }
@@ -69,16 +67,27 @@ fn search_nums(nums: &[u32], width: usize) -> Option<usize> {
   None
 }
 
-fn check(nums: &[u32], width: usize, a: usize, b: usize) -> bool {
+fn check(
+  nums: &[u32],
+  width: usize,
+  a: usize,
+  b: usize,
+  smudge: bool,
+) -> (bool, bool) {
   if b >= nums.len() {
-    return true;
+    return (true, smudge);
   }
   if nums[a] == nums[b] {
     if a == 0 {
-      return true;
+      return (true, smudge);
     }
-    check(nums, width, a - 1, b + 1)
+    check(nums, width, a - 1, b + 1, smudge)
+  } else if !smudge && (nums[a] ^ nums[b]).count_ones() == 1 {
+    if a == 0 {
+      return (true, true);
+    }
+    check(nums, width, a - 1, b + 1, true)
   } else {
-    false
+    (false, smudge)
   }
 }
