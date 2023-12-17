@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "cargo launch",
+      "cargo": {
+        "args": [
+          "build",
+          "--profile=lldb",
+          "--package=${input:problemName}",
+          "--bin=${input:problemName}"
+        ],
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preRunCommands": ["settings set target.input-path input.txt"],
+      "stopOnEntry": false
+    }
+  ]
+}

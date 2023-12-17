@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "problemName",
+      "description": "Name of the problem",
+      "type": "pickString",
+      "options": [
+        "aoc2023day12",
+      ],
+      "default": "aoc2023day12"
+    }
+  ]
+}

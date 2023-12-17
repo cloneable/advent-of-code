@@ -1,7 +1,9 @@
 .*
 !.*ignore
+!/.vscode/
+
 
 /target/
 /Cargo.lock
 
-/input.txt
+/input*.txt
