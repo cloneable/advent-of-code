@@ -1,0 +1,9 @@
+[package]
+name = "aoc2023day15"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+aoc = { path = "../../aoc" }
+indexmap = "2.1.0"
+nom = "7"
