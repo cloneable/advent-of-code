@@ -10,14 +10,68 @@ fn main() {
   let rows = tiles.len();
   let cols = tiles[0].len();
 
-  let mut energized = vec![vec![0u8; cols]; rows];
+  let mut max = 0;
+
+  for r in 0..rows {
+    let e = fire_beam(
+      &tiles,
+      rows as isize,
+      cols as isize,
+      Beam { pos: (r as isize, -1), dir: Dir::E },
+    );
+    if e >= max {
+      max = e;
+    }
+
+    let e = fire_beam(
+      &tiles,
+      rows as isize,
+      cols as isize,
+      Beam { pos: (r as isize, cols as isize), dir: Dir::W },
+    );
+    if e >= max {
+      max = e;
+    }
+  }
+
+  for c in 0..cols {
+    let e = fire_beam(
+      &tiles,
+      rows as isize,
+      cols as isize,
+      Beam { pos: (-1, c as isize), dir: Dir::S },
+    );
+    if e >= max {
+      max = e;
+    }
+
+    let e = fire_beam(
+      &tiles,
+      rows as isize,
+      cols as isize,
+      Beam { pos: (rows as isize, c as isize), dir: Dir::N },
+    );
+    if e >= max {
+      max = e;
+    }
+  }
+
+  println!("{max}");
+}
+
+fn fire_beam(
+  tiles: &Vec<Vec<char>>,
+  rows: isize,
+  cols: isize,
+  beam: Beam,
+) -> usize {
+  let mut energized = vec![vec![0u8; cols as usize]; rows as usize];
 
   let mut beams = VecDeque::new();
-  beams.push_back(Beam { pos: (0, -1), dir: Dir::E });
+  beams.push_back(beam);
   while !beams.is_empty() {
     let mut beam = beams.pop_front().unwrap();
-    let (active, sibling) =
-      beam.step(&tiles, rows as isize, cols as isize, &mut energized);
+    let (active, sibling) = beam.step(&tiles, rows, cols, &mut energized);
     if active {
       beams.push_back(beam);
     }
@@ -26,11 +80,9 @@ fn main() {
     }
   }
 
-  let sum = energized.into_iter().fold(0, |ar, r| {
-    ar + r.into_iter().fold(0, |ac, e| ac + (e != 0) as usize)
-  });
-
-  println!("{sum}");
+  energized
+    .into_iter()
+    .fold(0, |ar, r| ar + r.into_iter().fold(0, |ac, e| ac + (e != 0) as usize))
 }
 
 #[derive(Debug)]
