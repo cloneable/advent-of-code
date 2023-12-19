@@ -15,8 +15,7 @@ fn main() {
   let factory = Block { row: rows - 1, col: cols - 1 };
 
   let path = city.route(lavafall, factory).unwrap();
-  let total_loss =
-    path.iter().skip(1).fold(0, |total, (_, loss)| total + loss.0);
+  let total_loss = path.iter().fold(0, |total, (_, loss)| total + loss.0);
 
   println!("{total_loss}");
 }
@@ -117,34 +116,40 @@ impl City {
     None
   }
 
-  fn go(&self, node: Node, dir: Edge, c: usize) -> Option<(Node, HeatLoss)> {
+  fn go(
+    &self,
+    node: Node,
+    dir: Edge,
+    c: usize,
+    steps: usize,
+  ) -> Option<(Node, HeatLoss)> {
     match dir {
-      Edge::N if node.block.row != 0 => {
-        let block = Block { row: node.block.row - 1, col: node.block.col };
+      Edge::N if node.block.row >= steps => {
+        let block = Block { row: node.block.row - steps, col: node.block.col };
         Some((
           Node { block, edge: Some((dir.reverse(), c)) },
-          self.heat_loss(block),
+          self.heat_loss_range(node.block, block),
         ))
       }
-      Edge::W if node.block.col != 0 => {
-        let block = Block { row: node.block.row, col: node.block.col - 1 };
+      Edge::W if node.block.col >= steps => {
+        let block = Block { row: node.block.row, col: node.block.col - steps };
         Some((
           Node { block, edge: Some((dir.reverse(), c)) },
-          self.heat_loss(block),
+          self.heat_loss_range(node.block, block),
         ))
       }
-      Edge::S if node.block.row + 1 < self.rows => {
-        let block = Block { row: node.block.row + 1, col: node.block.col };
+      Edge::S if node.block.row + steps < self.rows => {
+        let block = Block { row: node.block.row + steps, col: node.block.col };
         Some((
           Node { block, edge: Some((dir.reverse(), c)) },
-          self.heat_loss(block),
+          self.heat_loss_range(node.block, block),
         ))
       }
-      Edge::E if node.block.col + 1 < self.cols => {
-        let block = Block { row: node.block.row, col: node.block.col + 1 };
+      Edge::E if node.block.col + steps < self.cols => {
+        let block = Block { row: node.block.row, col: node.block.col + steps };
         Some((
           Node { block, edge: Some((dir.reverse(), c)) },
-          self.heat_loss(block),
+          self.heat_loss_range(node.block, block),
         ))
       }
       _ => None,
@@ -159,38 +164,46 @@ impl City {
     let mut nodes = Vec::new();
     match node.edge {
       Some((Edge::N, n)) => {
-        if n < 2 {
-          self.go(node, Edge::S, n + 1).and_then(|adj| Some(nodes.push(adj)));
+        if n < 10 {
+          self
+            .go(node, Edge::S, n + 1, 1)
+            .and_then(|adj| Some(nodes.push(adj)));
         }
-        self.go(node, Edge::W, 0).and_then(|adj| Some(nodes.push(adj)));
-        self.go(node, Edge::E, 0).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::W, 4, 4).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::E, 4, 4).and_then(|adj| Some(nodes.push(adj)));
       }
       Some((Edge::S, n)) => {
-        if n < 2 {
-          self.go(node, Edge::N, n + 1).and_then(|adj| Some(nodes.push(adj)));
+        if n < 10 {
+          self
+            .go(node, Edge::N, n + 1, 1)
+            .and_then(|adj| Some(nodes.push(adj)));
         }
-        self.go(node, Edge::E, 0).and_then(|adj| Some(nodes.push(adj)));
-        self.go(node, Edge::W, 0).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::E, 4, 4).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::W, 4, 4).and_then(|adj| Some(nodes.push(adj)));
       }
       Some((Edge::W, n)) => {
-        if n < 2 {
-          self.go(node, Edge::E, n + 1).and_then(|adj| Some(nodes.push(adj)));
+        if n < 10 {
+          self
+            .go(node, Edge::E, n + 1, 1)
+            .and_then(|adj| Some(nodes.push(adj)));
         }
-        self.go(node, Edge::S, 0).and_then(|adj| Some(nodes.push(adj)));
-        self.go(node, Edge::N, 0).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::S, 4, 4).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::N, 4, 4).and_then(|adj| Some(nodes.push(adj)));
       }
       Some((Edge::E, n)) => {
-        if n < 2 {
-          self.go(node, Edge::W, n + 1).and_then(|adj| Some(nodes.push(adj)));
+        if n < 10 {
+          self
+            .go(node, Edge::W, n + 1, 1)
+            .and_then(|adj| Some(nodes.push(adj)));
         }
-        self.go(node, Edge::N, 0).and_then(|adj| Some(nodes.push(adj)));
-        self.go(node, Edge::S, 0).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::N, 4, 4).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::S, 4, 4).and_then(|adj| Some(nodes.push(adj)));
       }
       None => {
-        self.go(node, Edge::N, 0).and_then(|adj| Some(nodes.push(adj)));
-        self.go(node, Edge::W, 0).and_then(|adj| Some(nodes.push(adj)));
-        self.go(node, Edge::S, 0).and_then(|adj| Some(nodes.push(adj)));
-        self.go(node, Edge::E, 0).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::N, 4, 4).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::W, 4, 4).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::S, 4, 4).and_then(|adj| Some(nodes.push(adj)));
+        self.go(node, Edge::E, 4, 4).and_then(|adj| Some(nodes.push(adj)));
       }
     }
     nodes
@@ -205,8 +218,22 @@ impl City {
     HeatLoss((r1 - r0) + (c1 - c0))
   }
 
-  fn heat_loss(&self, block: Block) -> HeatLoss {
-    self.map[block.row][block.col]
+  fn heat_loss_range(&self, a: Block, b: Block) -> HeatLoss {
+    let r0 = a.row.min(b.row);
+    let r1 = a.row.max(b.row);
+    let c0 = a.col.min(b.col);
+    let c1 = a.col.max(b.col);
+
+    let mut loss = 0;
+    for r in r0..=r1 {
+      for c in c0..=c1 {
+        loss += self.map[r][c].0;
+      }
+    }
+    loss -= self.map[a.row][a.col].0;
+
+    assert_ne!(0, loss);
+    HeatLoss(loss)
   }
 
   fn backtrace(
@@ -214,10 +241,9 @@ impl City {
     backtraces: &HashMap<Node, Node>,
     mut node: Node,
   ) -> Vec<(Node, HeatLoss)> {
-    let loss = self.heat_loss(node.block);
-    let mut nodes = vec![(node, loss)];
+    let mut nodes = Vec::new();
     while let Some(prev) = backtraces.get(&node) {
-      let loss = self.heat_loss(prev.block);
+      let loss = self.heat_loss_range(prev.block, node.block);
       nodes.push((*prev, loss));
       node = *prev;
     }
