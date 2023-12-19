@@ -6,9 +6,9 @@
       "description": "Name of the problem",
       "type": "pickString",
       "options": [
-        "aoc2023day16",
+        "aoc2023day17",
       ],
-      "default": "aoc2023day16"
+      "default": "aoc2023day17"
     }
   ]
 }
